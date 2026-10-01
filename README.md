@@ -1,3 +1,5 @@
+![PhotoWoo preview](social-preview.jpg)
+
 # PhotoWoo
 
 A Windows image viewer with a quiet dark interface, RAW previews, printing and an immersive fullscreen mode.
