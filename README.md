@@ -1,4 +1,4 @@
-![PhotoWoo preview](docs/screenshots/social-preview.jpg)
+![PhotoWoo preview](docs/media/social-preview.jpg)
 
 # PhotoWoo
 
