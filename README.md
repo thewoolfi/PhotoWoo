@@ -2,7 +2,7 @@
 
 A Windows image viewer with a quiet dark interface, RAW previews, printing and an immersive fullscreen mode.
 
-![PhotoWoo displaying an image in its dark viewer](docs/screenshots/main.png)
+![PhotoWoo displaying an image in its dark viewer](docs/screenshots/mainpage.png)
 
 ## Download
 
