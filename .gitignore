@@ -1,0 +1,15 @@
+# Only the application, its build script and public project files are published.
+/*
+!/.gitignore
+!/README.md
+!/build.ps1
+!/src/
+!/.github/
+
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/*.suo
+**/*.pdb
+src/PhotoWoo/Assets/PhotoWoo-icon-preview.png

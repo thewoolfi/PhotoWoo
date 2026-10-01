@@ -1,0 +1,102 @@
+name: Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      archive: ${{ steps.package.outputs.archive }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v6
+        id: dotnet
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Select .NET 9 SDK
+        env:
+          SDK_VERSION: ${{ steps.dotnet.outputs.dotnet-version }}
+        run: |
+          @{ sdk = @{ version = $env:SDK_VERSION; rollForward = 'disable' } } |
+            ConvertTo-Json | Set-Content -LiteralPath global.json -Encoding utf8
+
+      - name: Build and package
+        id: package
+        run: |
+          [xml]$project = Get-Content -LiteralPath src/PhotoWoo/PhotoWoo.csproj -Raw
+          $version = [string]$project.Project.PropertyGroup.Version
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
+            throw 'The project version must use the format 0.4.0.'
+          }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne "v$version") {
+            throw 'The release tag must match the project version, for example v0.4.0.'
+          }
+          $output = "dist/PhotoWoo-$version"
+          ./build.ps1 -OutputDirectory $output
+          if (-not (Test-Path -LiteralPath "$output/PhotoWoo.exe" -PathType Leaf)) {
+            throw 'The published application was not found.'
+          }
+          $archive = "PhotoWoo-$version-win-x64.zip"
+          [System.IO.Compression.ZipFile]::CreateFromDirectory(
+            (Join-Path $PWD $output), (Join-Path $PWD "dist/$archive"),
+            [System.IO.Compression.CompressionLevel]::Optimal, $true)
+          "version=$version" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          "archive=$archive" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+
+      - name: Upload Windows ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/${{ steps.package.outputs.archive }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows ZIP
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.archive }}
+          path: dist
+          skip-decompress: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_ARCHIVE: ${{ needs.build.outputs.archive }}
+        run: |
+          $notes = @'
+          PhotoWoo for Windows x64. Extract the ZIP and run PhotoWoo.exe.
+
+          - View common image formats, RAW previews and ICO files.
+          - Rotate and save images, with print preview.
+          - Immersive fullscreen, smooth filmstrip navigation and settings in ten languages.
+          '@
+          $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
+          Set-Content -LiteralPath $notesPath -Value $notes -Encoding utf8
+          gh release create $env:GITHUB_REF_NAME "dist/$env:RELEASE_ARCHIVE" --repo $env:GITHUB_REPOSITORY --verify-tag --title "PhotoWoo $env:RELEASE_VERSION" --notes-file $notesPath
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release creation failed.' }
