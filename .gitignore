@@ -14,6 +14,11 @@
 !/docs/screenshots/*.jpeg
 !/docs/screenshots/*.webp
 !/docs/screenshots/*.gif
+!/docs/media/
+/docs/media/*
+!/docs/media/social-preview.jpg
+!/docs/media/photowoo-overview.mp4
+!/docs/media/photowoo-overview.gif
 
 **/bin/
 **/obj/

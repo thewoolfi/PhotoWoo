@@ -24,6 +24,10 @@ Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/re
 
 ## Screenshots
 
+![PhotoWoo interface overview](docs/media/photowoo-overview.gif)
+
+[Watch the 28-second overview](docs/media/photowoo-overview.mp4), made from application screenshots.
+
 <details>
 <summary>Explore the filmstrip, fullscreen view, printing and settings</summary>
 
