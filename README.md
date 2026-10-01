@@ -88,7 +88,7 @@ Requires Windows x64 and the .NET 9 SDK.
 
 ```powershell
 ./build.ps1
-# Output: dist/PhotoWoo-0.6.0/PhotoWoo.exe
+# Output: dist/PhotoWoo-0.6.1/PhotoWoo.exe
 ```
 
 The application uses WPF, Magick.NET 14.16.0 and SharpGLTF 1.0.7. Dependency notices are included in the portable build's licenses directory.

@@ -526,7 +526,7 @@ public sealed class ThumbnailItem(string path) : INotifyPropertyChanged
     private int _rotation;
     public string Path { get; } = path;
     public string Name => System.IO.Path.GetFileName(Path);
-    public string FormatLabel => System.IO.Path.GetExtension(Path).TrimStart('.').ToUpperInvariant();
+    public string FormatLabel => SupportedFiles.IsModel(Path) ? System.IO.Path.GetExtension(Path).TrimStart('.').ToUpperInvariant() : "";
     public BitmapSource? Thumb { get => _thumb; set { _thumb = value; PropertyChanged?.Invoke(this, new(nameof(Thumb))); } }
     public int Rotation { get => _rotation; set { _rotation = value; PropertyChanged?.Invoke(this, new(nameof(Rotation))); } }
     public event PropertyChangedEventHandler? PropertyChanged;
