@@ -5,6 +5,15 @@
 !/build.ps1
 !/src/
 !/.github/
+!/docs/
+/docs/*
+!/docs/screenshots/
+/docs/screenshots/*
+!/docs/screenshots/*.png
+!/docs/screenshots/*.jpg
+!/docs/screenshots/*.jpeg
+!/docs/screenshots/*.webp
+!/docs/screenshots/*.gif
 
 **/bin/
 **/obj/

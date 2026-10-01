@@ -6,6 +6,8 @@ A Windows image viewer with a quiet dark interface, RAW previews, printing and a
 
 Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/releases). Extract the entire folder and run **PhotoWoo.exe**. The portable build includes .NET; keep its accompanying files beside the executable.
 
+![PhotoWoo displaying an image in its dark viewer](docs/screenshots/image.png)
+
 ## Features
 
 - JPEG, PNG, TIFF, BMP, WebP, HEIC, ICO and camera RAW through WIC and Magick.NET/LibRaw. RAW support depends on the camera and decoder version.
@@ -17,6 +19,25 @@ Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/re
 - Settings for animations, inertia, fullscreen behavior, language and Windows file associations.
 - Manual and automatic update checks, with verified downloads and confirmed installation from GitHub Releases.
 - English, Russian, German, French, Spanish, Italian, Portuguese, Polish, Ukrainian and Simplified Chinese. System dialogs follow Windows language settings.
+
+## Screenshots
+
+<details>
+<summary>Explore the filmstrip, fullscreen view, printing and settings</summary>
+
+| Filmstrip navigation | Fullscreen with controls visible |
+| --- | --- |
+| ![PhotoWoo filmstrip](docs/screenshots/imagewith.png) | ![PhotoWoo fullscreen view](docs/screenshots/4.png) |
+
+| Image information | Print preview |
+| --- | --- |
+| ![Image information panel](docs/screenshots/infopage.png) | ![Print preview with page options](docs/screenshots/printpage.png) |
+
+| Start screen | Viewing settings |
+| --- | --- |
+| ![PhotoWoo start screen](docs/screenshots/mainpage.png) | ![Viewing and animation settings](docs/screenshots/settings.png) |
+
+</details>
 
 ## Updates
 
