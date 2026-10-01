@@ -20,6 +20,7 @@ jobs:
     outputs:
       version: ${{ steps.package.outputs.version }}
       archive: ${{ steps.package.outputs.archive }}
+      checksum: ${{ steps.package.outputs.checksum }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -43,10 +44,10 @@ jobs:
           [xml]$project = Get-Content -LiteralPath src/PhotoWoo/PhotoWoo.csproj -Raw
           $version = [string]$project.Project.PropertyGroup.Version
           if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') {
-            throw 'The project version must use the format 0.4.0.'
+            throw 'The project version must use the format 0.5.0.'
           }
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -cne "v$version") {
-            throw 'The release tag must match the project version, for example v0.4.0.'
+            throw 'The release tag must match the project version, for example v0.5.0.'
           }
           $output = "dist/PhotoWoo-$version"
           ./build.ps1 -OutputDirectory $output
@@ -59,11 +60,23 @@ jobs:
             [System.IO.Compression.CompressionLevel]::Optimal, $true)
           "version=$version" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
           "archive=$archive" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          $checksum = "$archive.sha256"
+          $hash = (Get-FileHash -LiteralPath "dist/$archive" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $archive" | Set-Content -LiteralPath "dist/$checksum" -Encoding ascii
+          "checksum=$checksum" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
 
       - name: Upload Windows ZIP
         uses: actions/upload-artifact@v7
         with:
           path: dist/${{ steps.package.outputs.archive }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload checksum
+        uses: actions/upload-artifact@v7
+        with:
+          path: dist/${{ steps.package.outputs.checksum }}
           archive: false
           if-no-files-found: error
           retention-days: 14
@@ -83,11 +96,19 @@ jobs:
           path: dist
           skip-decompress: true
 
+      - name: Download checksum
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.checksum }}
+          path: dist
+          skip-decompress: true
+
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
           RELEASE_ARCHIVE: ${{ needs.build.outputs.archive }}
+          RELEASE_CHECKSUM: ${{ needs.build.outputs.checksum }}
         run: |
           $notes = @'
           PhotoWoo for Windows x64. Extract the ZIP and run PhotoWoo.exe.
@@ -95,8 +116,12 @@ jobs:
           - View common image formats, RAW previews and ICO files.
           - Rotate and save images, with print preview.
           - Immersive fullscreen, smooth filmstrip navigation and settings in ten languages.
+          - New Updates settings: check manually or automatically at startup and every 30 minutes.
+          - Download verified updates from GitHub Releases, then confirm installation and restart.
+
+          If you are using PhotoWoo 0.4 or earlier, download this release manually once to enable future in-app updates.
           '@
           $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'
           Set-Content -LiteralPath $notesPath -Value $notes -Encoding utf8
-          gh release create $env:GITHUB_REF_NAME "dist/$env:RELEASE_ARCHIVE" --repo $env:GITHUB_REPOSITORY --verify-tag --title "PhotoWoo $env:RELEASE_VERSION" --notes-file $notesPath
+          gh release create $env:GITHUB_REF_NAME "dist/$env:RELEASE_ARCHIVE" "dist/$env:RELEASE_CHECKSUM" --repo $env:GITHUB_REPOSITORY --verify-tag --title "PhotoWoo $env:RELEASE_VERSION" --notes-file $notesPath
           if ($LASTEXITCODE -ne 0) { throw 'GitHub release creation failed.' }

@@ -207,6 +207,8 @@
                 <TextBlock x:Name="DirtyText" Grid.Column="3" Text="{DynamicResource L10n.main.dirty}" Visibility="Collapsed"
                            Foreground="#D4B17C" FontSize="12" VerticalAlignment="Center" Margin="16,0" />
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button x:Name="UpdateButton" Style="{StaticResource QuietButton}" Visibility="Collapsed" Foreground="#A9C8BD"
+                            Content="{DynamicResource L10n.updates.button}" Click="Update_Click" />
                     <Button x:Name="OpenButton" Style="{StaticResource IconButton}" Tag="M3,7 L3,5 Q3,4 4,4 L9,4 11,7 20,7 Q21,7 21,8 L21,10 M3,9 L21,9 18,20 3,20 Z"
                             Click="Open_Click" ToolTip="{DynamicResource L10n.main.openTip}" AutomationProperties.Name="{DynamicResource L10n.main.open}" />
                     <Button x:Name="FilmstripButton" Style="{StaticResource IconButton}" Tag="M5,4 L19,4 Q21,4 21,6 L21,18 Q21,20 19,20 L5,20 Q3,20 3,18 L3,6 Q3,4 5,4 Z M3,15 L21,15 M9,15 L9,20 M15,15 L15,20"

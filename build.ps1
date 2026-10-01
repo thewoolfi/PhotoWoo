@@ -1,4 +1,4 @@
-param([string]$OutputDirectory = 'dist\PhotoWoo-0.4.0')
+param([string]$OutputDirectory = 'dist\PhotoWoo-0.5.0')
 $ErrorActionPreference = 'Stop'
 $project = Join-Path $PSScriptRoot 'src\PhotoWoo\PhotoWoo.csproj'
 $output = if ([System.IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory } else { Join-Path $PSScriptRoot $OutputDirectory }

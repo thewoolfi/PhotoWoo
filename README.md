@@ -15,7 +15,16 @@ Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/re
 - Rotation, undo, save and save a copy. RAW originals are never overwritten.
 - Print preview, page orientation and image placement, followed by the Windows printer dialog.
 - Settings for animations, inertia, fullscreen behavior, language and Windows file associations.
+- Manual and automatic update checks, with verified downloads and confirmed installation from GitHub Releases.
 - English, Russian, German, French, Spanish, Italian, Portuguese, Polish, Ukrainian and Simplified Chinese. System dialogs follow Windows language settings.
+
+## Updates
+
+Open **Settings → Updates → Check for updates** to check manually. Automatic checks are enabled by default and run shortly after startup and every 30 minutes while PhotoWoo is open. They can be turned off in Settings. A new release adds an **Update** button to the viewer; background checks never interrupt a photo or install anything automatically.
+
+Choose **Download update**, then **Install and restart** when ready. PhotoWoo verifies the ZIP with SHA-256, asks about unsaved rotation, replaces its application files and reopens the current image. Photos, settings and other files in the application folder are preserved. Close other copies of PhotoWoo before installing; the portable folder must be writable. If file replacement fails, the updater attempts to restore the previous files.
+
+Updates come from published stable [GitHub Releases](https://github.com/thewoolfi/PhotoWoo/releases), not individual commits. Releases use tags such as `v0.5.0` matching the project version; the Windows workflow builds the ZIP, adds its checksum and publishes it. Version 0.4 and earlier need one manual download to gain the updater.
 
 ## Controls
 
@@ -44,7 +53,7 @@ Requires Windows x64 and the .NET 9 SDK.
 
 ```powershell
 ./build.ps1
-# Output: dist/PhotoWoo-0.4.0/PhotoWoo.exe
+# Output: dist/PhotoWoo-0.5.0/PhotoWoo.exe
 ```
 
 The application uses WPF and Magick.NET 14.16.0. Dependency notices are included in the portable build’s `licenses` directory.

@@ -44,6 +44,7 @@ public partial class MainWindow : Window
     {
         _settings = ReadSettings();
         MainTranslations.Register();
+        UpdateTranslations.Register();
         L10n.SetLanguage(_settings.Language);
         MotionPreferences.AnimationsEnabled = _settings.Animations;
         MotionPreferences.InertiaEnabled = _settings.Inertia;
@@ -62,6 +63,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             UpdateControls();
+            InitializeUpdates();
             if (!string.IsNullOrWhiteSpace(startupPath) && File.Exists(startupPath)) await OpenPathsAsync([Path.GetFullPath(startupPath)]);
         };
     }
@@ -381,7 +383,7 @@ public partial class MainWindow : Window
         await LoadCurrentAsync(true);
     }
 
-    private async Task<bool> SaveAsync(bool copy)
+    private async Task<bool> SaveAsync(bool copy, Window? owner = null)
     {
         if (_busy || _loading || _path is null || _loaded is null) return false;
         EndImageDrag();
@@ -400,9 +402,9 @@ public partial class MainWindow : Window
                 FilterIndex = extension == ".png" ? 2 : ImageService.IsRaw(source) ? 3 : 1,
                 OverwritePrompt = true, AddExtension = true
             };
-            if (dialog.ShowDialog(this) != true) return false;
+            if (dialog.ShowDialog(owner ?? this) != true) return false;
             destination = dialog.FileName;
-            if (string.Equals(source, destination, StringComparison.OrdinalIgnoreCase) && (!canOverwrite || copy)) { ShowError(L10n.Text("main.differentName")); return false; }
+            if (string.Equals(source, destination, StringComparison.OrdinalIgnoreCase) && (!canOverwrite || copy)) { ShowError(L10n.Text("main.differentName"), owner); return false; }
         }
         _busy = true; _backgroundCts.Cancel(); UpdateControls(); StatusText.Text = L10n.Text("main.saving");
         try
@@ -418,17 +420,17 @@ public partial class MainWindow : Window
             RebuildThumbnails();
             await LoadCurrentAsync(); StatusText.Text = L10n.Format("main.saved", Path.GetFileName(destination)); return true;
         }
-        catch (Exception ex) { ShowError(L10n.Format("main.saveFailed", ex.Message)); return false; }
+        catch (Exception ex) { ShowError(L10n.Format("main.saveFailed", ex.Message), owner); return false; }
         finally { _busy = false; UpdateControls(); }
     }
     private async void Save_Click(object sender, RoutedEventArgs e) => await SaveAsync(false);
     private async void SaveCopy_Click(object sender, RoutedEventArgs e) => await SaveAsync(true);
-    private async Task<bool> ConfirmChangesAsync()
+    private async Task<bool> ConfirmChangesAsync(Window? owner = null)
     {
         if (_turns == 0) return true;
-        var choice = MessageBox.Show(this, L10n.Text("main.saveQuestion"), L10n.Text("main.unsavedTitle"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var choice = MessageBox.Show(owner ?? this, L10n.Text("main.saveQuestion"), L10n.Text("main.unsavedTitle"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         if (choice == MessageBoxResult.Cancel) return false;
-        if (choice == MessageBoxResult.Yes) return await SaveAsync(false);
+        if (choice == MessageBoxResult.Yes) return await SaveAsync(false, owner);
         _turns = 0; _fit = true; FitImage(); UpdateControls(); return true;
     }
 
@@ -496,7 +498,7 @@ public partial class MainWindow : Window
         EndImageDrag(); StopPhotoArrival();
         try { Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!); File.WriteAllText(SettingsFile, JsonSerializer.Serialize(_settings)); } catch { }
     }
-    private void ShowError(string message) => MessageBox.Show(this, message, "PhotoWoo", MessageBoxButton.OK, MessageBoxImage.Information);
+    private void ShowError(string message, Window? owner = null) => MessageBox.Show(owner ?? this, message, "PhotoWoo", MessageBoxButton.OK, MessageBoxImage.Information);
     [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
     [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)] private static extern int StrCmpLogicalW(string a, string b);
 }

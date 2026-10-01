@@ -27,6 +27,7 @@ public sealed class SettingsWindow : Window
     private static readonly Brush Accent = new SolidColorBrush(Color.FromRgb(169, 200, 189));
 
     public ViewerSettings ResultSettings { get; private set; }
+    public event EventHandler? CheckUpdatesRequested;
     public SettingsWindow() : this(new ViewerSettings()) { }
 
     public SettingsWindow(ViewerSettings settings, string initialTab = "viewing")
@@ -64,6 +65,7 @@ public sealed class SettingsWindow : Window
         AddTab(tabs, "viewing", ViewingPage());
         AddTab(tabs, "controls", ControlsPage());
         AddTab(tabs, "windows", WindowsPage());
+        AddTab(tabs, "updates", UpdatesPage());
         AddTab(tabs, "about", AboutPage());
         tabs.SelectedItem = tabs.Items.Cast<TabItem>().FirstOrDefault(item => Equals(item.Tag, _selectedTab)) ?? tabs.Items[0];
         tabs.SelectionChanged += (_, e) => { if (ReferenceEquals(e.Source, tabs) && tabs.SelectedItem is TabItem selected) _selectedTab = (string)selected.Tag; };
@@ -198,6 +200,22 @@ public sealed class SettingsWindow : Window
             catch (Exception ex) { note.Text = L10n.Format("settings.windows.error", ex.Message); }
         };
         page.Children.Add(defaults); page.Children.Add(note);
+        return page;
+    }
+
+    private FrameworkElement UpdatesPage()
+    {
+        var page = new StackPanel();
+        page.Children.Add(new TextBlock { Text = L10n.Text("settings.tab.updates"), FontSize = 21, FontWeight = FontWeights.Light });
+        var version = Assembly.GetExecutingAssembly().GetName().Version;
+        page.Children.Add(Paragraph(L10n.Format("updates.installedVersion", version is null ? "0.3" : $"{version.Major}.{version.Minor}.{version.Build}"), 9));
+        var options = Toggle("updates.autoCheck", "updates.autoCheckHint", _draft.CheckUpdatesAutomatically, value => _draft.CheckUpdatesAutomatically = value);
+        options.Margin = new Thickness(0, 27, 0, 20); page.Children.Add(options);
+        page.Children.Add(Paragraph(L10n.Text("updates.settingsDescription"), 0));
+        var check = MakeButton(L10n.Text("updates.check"), true);
+        check.HorizontalAlignment = HorizontalAlignment.Left; check.Margin = new Thickness(0, 22, 0, 0);
+        check.Click += (_, _) => CheckUpdatesRequested?.Invoke(this, EventArgs.Empty);
+        page.Children.Add(check);
         return page;
     }
 

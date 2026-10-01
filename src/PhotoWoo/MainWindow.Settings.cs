@@ -14,6 +14,7 @@ public partial class MainWindow
     {
         EndImageDrag();
         var dialog = new SettingsWindow(_settings, initialTab) { Owner = this };
+        dialog.CheckUpdatesRequested += (_, _) => ShowUpdates(dialog);
         if (dialog.ShowDialog() == true)
         {
             _settings = dialog.ResultSettings;
@@ -23,6 +24,7 @@ public partial class MainWindow
             AnimatePanel(FilmstripBorder, _settings.Filmstrip, HeightProperty, 111);
             FilmstripButton.Foreground = new SolidColorBrush(_settings.Filmstrip ? Color.FromRgb(169, 200, 189) : Color.FromRgb(213, 218, 219));
             RefreshFullscreenSettings();
+            RefreshUpdateSchedule();
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);

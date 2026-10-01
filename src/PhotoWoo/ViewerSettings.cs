@@ -10,6 +10,7 @@ public sealed class ViewerSettings
     public bool FullscreenFill { get; set; }
     public double FullscreenHideDelaySeconds { get; set; } = 2;
     public string SupportUrl { get; set; } = DefaultSupportUrl;
+    public bool CheckUpdatesAutomatically { get; set; } = true;
 
     public ViewerSettings Copy() => (ViewerSettings)MemberwiseClone();
 
