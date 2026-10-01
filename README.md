@@ -2,7 +2,7 @@
 
 # PhotoWoo
 
-A Windows image viewer with a quiet dark interface, RAW previews, printing and an immersive fullscreen mode.
+A desktop image viewer with a quiet dark interface, RAW previews, basic GLB/glTF viewing, printing and an immersive fullscreen mode. The current release runs on Windows.
 
 ![PhotoWoo displaying an image in its dark viewer](docs/screenshots/mainpage.png)
 
@@ -14,7 +14,9 @@ Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/re
 
 ## Features
 
-- JPEG, PNG, TIFF, BMP, WebP, HEIC, ICO and camera RAW through WIC and Magick.NET/LibRaw. RAW support depends on the camera and decoder version.
+- 145 recognized file extensions, including JPEG, PNG, TIFF, BMP, WebP, HEIC, AVIF, JPEG XL, JPEG XR, SVG/SVGZ, QOI, ICO/CUR/ANI, PNG-based ICNS and camera RAW. Decoding depends on the file variant and, for RAW, the camera.
+- Photoshop and GIMP images, merged previews from Krita/OpenRaster documents, and additional scientific and legacy image formats including EXR, HDR, FITS, DICOM, PCX, PICT, Targa, SGI, Netpbm, WMF and EMF.
+- Basic glTF 2.0 model viewing (.glb and .gltf): textures, orbit, pan, zoom, drag inertia and reset view in the same window. Models open from Explorer, drag-and-drop or the file dialog.
 - Embedded RAW previews for quick viewing, with full-resolution decoding on request.
 - Zoom, pan, folder navigation and a filmstrip with mouse-wheel scrolling and drag inertia.
 - Fullscreen photography with controls that appear on movement and disappear when idle. Fit preserves the whole image; optional fill crops its edges to cover the display.
@@ -72,9 +74,13 @@ Updates come from published stable [GitHub Releases](https://github.com/thewoolf
 
 The mouse wheel zooms over the image and scrolls horizontally over the filmstrip. Drag a fitted image to navigate; drag a zoomed image to pan. Double-click switches between fit and 100%.
 
+For 3D models, drag with the left button to orbit. Right-drag, middle-drag or Shift-drag pans; the wheel and +/− zoom. Double-click, 0 or the fit button resets the camera. Image editing and printing controls are hidden in 3D mode.
+
 ## File associations
 
-Keep PhotoWoo in a permanent folder, then open **Settings → Windows** to register it. Choose supported formats in Windows Default Apps. Existing defaults are not changed automatically. Registered files use PhotoWoo’s document icon where Explorer displays icons instead of thumbnails.
+Keep PhotoWoo in a permanent folder, then use **Settings → Windows → Choose as default app**. The button registers all supported extensions and opens PhotoWoo's page in Windows 11 Default Apps (the general page on Windows 10). Complete the selection there; Windows requires its system interface to confirm default-app changes. PhotoWoo shows how many extensions currently use it and refreshes the count when you return.
+
+Use the button again after an update adds formats. Registered files use PhotoWoo's document icon where Explorer displays icons instead of thumbnails.
 
 ## Build
 
@@ -82,13 +88,15 @@ Requires Windows x64 and the .NET 9 SDK.
 
 ```powershell
 ./build.ps1
-# Output: dist/PhotoWoo-0.5.0/PhotoWoo.exe
+# Output: dist/PhotoWoo-0.6.0/PhotoWoo.exe
 ```
 
-The application uses WPF and Magick.NET 14.16.0. Dependency notices are included in the portable build’s `licenses` directory.
+The application uses WPF, Magick.NET 14.16.0 and SharpGLTF 1.0.7. Dependency notices are included in the portable build's licenses directory.
 
 ## Current limitations
 
-This is an early release. JPEG rotation is re-encoded at quality 95; lossless JPEG rotation is not implemented. Animated and multipage files show the first frame, except ICO, which selects the largest suitable icon. Detected multiframe originals cannot be overwritten. Full RAW rendering can differ from the camera’s embedded preview. Physical printing, every RAW camera model, HDR and all colour-profile combinations have not been verified.
+This is an early release. JPEG rotation is re-encoded at quality 95; lossless JPEG rotation is not implemented. Animated and multipage files show the first frame, except ICO/CUR and PNG-based ICNS, which select the largest suitable icon. ANI shows its first icon frame. Detected multiframe originals cannot be overwritten. Krita/OpenRaster require a mergedimage.png preview. Legacy ICNS representations without PNG and SVG external files, scripts and HTML are not supported. Full RAW rendering can differ from the camera's embedded preview. Physical printing, every RAW camera model, HDR and all colour-profile combinations have not been verified.
+
+3D viewing uses simplified diffuse lighting and base-color textures, with models in their default pose. Animation playback, full PBR shading, vertex colors, Draco/meshopt compression and KTX2-only textures are not supported. Transparent materials may have sorting differences. Model resources must be in the model's folder or a subfolder, with no network resources or filesystem links. The viewer limits scenes to 2 million vertices/triangles, input resources to 512 MB (256 MB per file), and decoded textures to 128 MB; textures are limited to 2048 pixels on their longest side. This is a viewer, without 3D editing or saving.
 
 Settings are stored in `%LOCALAPPDATA%/PhotoWoo/settings.json`. The support button opens the creator’s [Boosty page](https://boosty.to/andrewwoolfi) in the default browser; PhotoWoo does not collect payments.

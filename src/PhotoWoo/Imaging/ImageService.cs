@@ -31,11 +31,20 @@ public sealed class ImageService
     {
         ".jpg", ".jpeg", ".jpe", ".jfif", ".png", ".apng", ".webp", ".tif", ".tiff", ".bmp",
         ".dib", ".gif", ".heic", ".heif", ".avif", ".jxl", ".jp2", ".j2k", ".jpf", ".jpx",
-        ".psd", ".psb", ".tga", ".dds", ".ico", ".exr", ".hdr", ".pfm", ".ppm", ".pgm", ".pbm"
+        ".psd", ".psb", ".tga", ".dds", ".ico", ".exr", ".hdr", ".pfm", ".ppm", ".pgm", ".pbm",
+        ".jif", ".jfi", ".pjpeg", ".pjp", ".jps", ".jpc", ".j2c", ".jpm", ".jpt",
+        ".jxr", ".wdp", ".hdp", ".hif", ".avifs", ".heics", ".heifs",
+        ".svg", ".svgz", ".cur", ".ani", ".icns", ".icon", ".icn", ".pcx", ".dcx", ".pcd", ".pcds",
+        ".pct", ".pict", ".pic", ".targa", ".icb", ".vda", ".vst", ".rle",
+        ".pnm", ".pam", ".pgx", ".phm", ".qoi", ".jng", ".mng", ".wbmp",
+        ".ras", ".sun", ".sgi", ".rgb", ".rgba", ".bw", ".int", ".inta",
+        ".xbm", ".xpm", ".xcf", ".ora", ".kra", ".emf", ".wmf",
+        ".dpx", ".cin", ".fits", ".fit", ".fts", ".dcm", ".dicom", ".miff", ".mif",
+        ".ff", ".farbfeld", ".cut", ".art", ".sct", ".wpg"
     };
 
     private static readonly HashSet<string> WicExtensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".jpg", ".jpeg", ".jpe", ".jfif", ".png", ".bmp", ".dib", ".gif", ".tif", ".tiff" };
+        { ".jpg", ".jpeg", ".jpe", ".jfif", ".jif", ".jfi", ".pjpeg", ".pjp", ".jps", ".png", ".bmp", ".dib", ".gif", ".tif", ".tiff", ".jxr", ".wdp", ".hdp" };
 
     // Limit native decoders, including background thumbnail requests, across all service instances.
     private static readonly SemaphoreSlim DecodeSlots = new(2, 2);
@@ -48,6 +57,7 @@ public sealed class ImageService
     });
 
     public static bool IsRaw(string path) => RawExtensions.Contains(Path.GetExtension(path));
+    internal static void EnsureNativeLimits() => _ = NativeLimits.Value;
 
     /// <summary>Recognised candidate extensions; actual decoding depends on file and camera support.</summary>
     public static bool IsSupported(string path) => IsRaw(path) || RasterExtensions.Contains(Path.GetExtension(path));
@@ -111,12 +121,13 @@ public sealed class ImageService
     {
         token.ThrowIfCancellationRequested();
         var watch = Stopwatch.StartNew();
-        if (string.Equals(Path.GetExtension(path), ".ico", StringComparison.OrdinalIgnoreCase))
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        if (extension is ".ico" or ".icon" or ".icn" or ".cur" or ".ani")
         {
-            using var stream = OpenRead(path);
+            using var stream = ExtraImageFormats.OpenIcon(path);
             var icon = IconImageDecoder.Decode(stream, maxDimension, fullResolution, token);
             return new LoadedImage(icon.Bitmap, icon.Width, icon.Height,
-                icon.Bitmap.PixelWidth != icon.Width || icon.Bitmap.PixelHeight != icon.Height, "ICO", watch.Elapsed);
+                icon.Bitmap.PixelWidth != icon.Width || icon.Bitmap.PixelHeight != icon.Height, extension[1..].ToUpperInvariant(), watch.Elapsed);
         }
         if (WicExtensions.Contains(Path.GetExtension(path)))
         {
@@ -143,11 +154,12 @@ public sealed class ImageService
 
         using var image = NewImage(token);
         var settings = CreateReadSettings(raw);
+        ExtraImageFormats.SetReadFormat(path, settings);
         try
         {
             // Streams keep file names literal: brackets and coder-like prefixes are not interpreted.
-            using var stream = OpenRead(path);
-            image.Read(stream, settings);
+            using var stream = ExtraImageFormats.OpenImage(path);
+            ExtraImageFormats.Read(image, stream, settings, path);
             token.ThrowIfCancellationRequested();
             image.AutoOrient();
             var width = checked((int)image.Width);
@@ -348,20 +360,24 @@ public sealed class ImageService
         try
         {
             using var image = NewImage(token);
-            using (var input = OpenRead(source))
+            using (var input = ExtraImageFormats.OpenImage(source))
             {
-                if (string.Equals(Path.GetExtension(source), ".ico", StringComparison.OrdinalIgnoreCase))
+                if (Path.GetExtension(source).ToLowerInvariant() is ".ico" or ".icon" or ".icn" or ".cur" or ".ani" or ".jxr" or ".wdp" or ".hdp")
                 {
-                    var icon = IconImageDecoder.Decode(input, int.MaxValue, true, token);
+                    var decoded = Load(source, int.MaxValue, true, token);
                     var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(icon.Bitmap));
+                    encoder.Frames.Add(BitmapFrame.Create(decoded.Bitmap));
                     using var encoded = new MemoryStream();
                     encoder.Save(encoded);
                     encoded.Position = 0;
                     image.Read(encoded, MagickFormat.Png);
                 }
                 else
-                    image.Read(input, CreateReadSettings(IsRaw(source)));
+                {
+                    var settings = CreateReadSettings(IsRaw(source));
+                    ExtraImageFormats.SetReadFormat(source, settings);
+                    ExtraImageFormats.Read(image, input, settings, source);
+                }
             }
             token.ThrowIfCancellationRequested();
             image.AutoOrient();

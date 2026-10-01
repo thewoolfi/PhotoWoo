@@ -176,7 +176,7 @@ public partial class MainWindow
     private void FullscreenIdleTick(object? sender, EventArgs e)
     {
         if (!_fullScreen) { _fullscreenIdleTimer?.Stop(); return; }
-        if (!IsActive || !IsEnabled || _busy || _loading || _dragStart is not null
+        if (!IsActive || !IsEnabled || _busy || _loading || _dragStart is not null || ModelView.IsMouseCaptured
             || Mouse.Captured is not null || Mouse.LeftButton == MouseButtonState.Pressed
             || Mouse.RightButton == MouseButtonState.Pressed || Mouse.MiddleButton == MouseButtonState.Pressed)
         {

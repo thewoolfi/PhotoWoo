@@ -45,12 +45,14 @@ public partial class MainWindow : Window
         _settings = ReadSettings();
         MainTranslations.Register();
         UpdateTranslations.Register();
+        ModelTranslations.Register();
         L10n.SetLanguage(_settings.Language);
         MotionPreferences.AnimationsEnabled = _settings.Animations;
         MotionPreferences.InertiaEnabled = _settings.Inertia;
         InitializeComponent();
+        ModelView.ViewChanged += (_, _) => { if (_modelLoaded is not null) ZoomText.Text = $"{ModelView.ZoomPercent:N0}%"; };
         PhotoImage.RenderTransform = new TransformGroup { Children = [_photoRotation, _photoOffset, _arrivalOffset] };
-        Deactivated += (_, _) => { EndImageDrag(); StopPhotoArrival(); };
+        Deactivated += (_, _) => { EndImageDrag(); StopPhotoArrival(); ModelView.Stop(); };
         PreviewMouseDown += (_, _) => { if (_motionKind == 1) StopImageMotion(); };
         FilmstripBorder.Visibility = _settings.Filmstrip ? Visibility.Visible : Visibility.Collapsed;
         ThumbnailsList.ItemsSource = _thumbnails;
@@ -77,13 +79,13 @@ public partial class MainWindow : Window
     private async void Open_Click(object sender, RoutedEventArgs e)
     {
         if (_busy) return;
-        var dialog = new OpenFileDialog { Title = L10n.Text("main.open"), Filter = ImageService.OpenFilter.Replace("Изображения и RAW", L10n.Text("main.formats")).Replace("Все файлы", L10n.Text("main.allFiles")), Multiselect = true };
+        var dialog = new OpenFileDialog { Title = L10n.Text("main.open"), Filter = SupportedFiles.Filter(L10n.Text("models.allFormats"), L10n.Text("main.formats"), L10n.Text("models.formats"), L10n.Text("main.allFiles")), Multiselect = true };
         if (dialog.ShowDialog(this) == true && await ConfirmChangesAsync()) await OpenPathsAsync(dialog.FileNames);
     }
 
     private async Task OpenPathsAsync(IEnumerable<string> selected)
     {
-        var paths = selected.Where(File.Exists).Select(Path.GetFullPath).Where(ImageService.IsSupported).ToList();
+        var paths = selected.Where(File.Exists).Select(Path.GetFullPath).Where(SupportedFiles.IsSupported).ToList();
         if (paths.Count == 0) { ShowError(L10n.Text("main.unsupported")); return; }
         _folderCts.Cancel(); _folderCts.Dispose(); _folderCts = new();
         var token = _folderCts.Token;
@@ -100,7 +102,7 @@ public partial class MainWindow : Window
                 foreach (var file in Directory.EnumerateFiles(Path.GetDirectoryName(first)!))
                 {
                     token.ThrowIfCancellationRequested();
-                    if (ImageService.IsSupported(file)) result.Add(file);
+                    if (SupportedFiles.IsSupported(file)) result.Add(file);
                 }
                 result.Sort((a, b) => StrCmpLogicalW(Path.GetFileName(a), Path.GetFileName(b)));
                 return result;
@@ -150,6 +152,7 @@ public partial class MainWindow : Window
         bool same = string.Equals(_path, path, StringComparison.OrdinalIgnoreCase);
         int arrivalDirection = _incomingDirection; _incomingDirection = 0;
         if (!same) { _turns = 0; _loaded = null; PhotoImage.Source = null; }
+        ClearModel();
         _path = path; _loading = true;
         EmptyState.Visibility = Visibility.Collapsed;
         LoadingText.Text = L10n.Text(full ? "main.fullLoading" : "main.opening");
@@ -158,6 +161,17 @@ public partial class MainWindow : Window
         var clock = Stopwatch.StartNew();
         try
         {
+            if (SupportedFiles.IsModel(path))
+            {
+                var model = await _models.LoadAsync(path, token);
+                if (token.IsCancellationRequested || request != _request) return;
+                ModelView.SetModel(model); _modelLoaded = model;
+                _loaded = null; PhotoImage.Source = null;
+                ModelView.Visibility = Visibility.Visible; Viewport.Visibility = Visibility.Collapsed;
+                StatusText.Text = L10n.Text("models.controls");
+                UpdateControls(); RequestFilmstripThumbnails();
+                return;
+            }
             LoadedImage result;
             var key = CacheKey(path);
             if (!full && _cache.TryGetValue(key, out var cached)) result = cached;
@@ -189,7 +203,7 @@ public partial class MainWindow : Window
             foreach (var i in new[] { selected + 1, selected - 1 })
             {
                 token.ThrowIfCancellationRequested();
-                if (i < 0 || i >= snapshot.Length) continue;
+                if (i < 0 || i >= snapshot.Length || SupportedFiles.IsModel(snapshot[i])) continue;
                 try
                 {
                     var key = CacheKey(snapshot[i]); if (_cache.ContainsKey(key)) continue;
@@ -229,7 +243,8 @@ public partial class MainWindow : Window
             var previewNote = L10n.Text(ImageService.IsRaw(_path!) && image.IsPreview ? "main.rawPreview" : image.IsPreview ? "main.fastPreview" : "main.fullQuality");
             InfoDetailsText.Text = L10n.Format("main.infoDetails", image.Format.ToUpperInvariant(), w, h, fileSize, _turns * 90, previewNote);
         }
-        else { DetailsText.Text = "JPEG · PNG · TIFF · WebP · HEIC · RAW"; InfoNameText.Text = L10n.Text("main.noImage"); InfoDetailsText.Text = L10n.Text("main.noInfo"); }
+        else { DetailsText.Text = "JPEG · PNG · SVG · RAW · GLB"; InfoNameText.Text = L10n.Text("main.noImage"); InfoDetailsText.Text = L10n.Text("main.noInfo"); }
+        UpdateModelControls();
         _syncSelection = true; ThumbnailsList.SelectedIndex = _index; _syncSelection = false;
         if (_index < _thumbnails.Count && _index >= 0 && FilmstripBorder.Visibility == Visibility.Visible) ThumbnailsList.ScrollIntoView(_thumbnails[_index]);
         if (_index < _thumbnails.Count && _index >= 0) _thumbnails[_index].Rotation = _turns * 90;
@@ -295,9 +310,10 @@ public partial class MainWindow : Window
         EndImageDrag(); _turns = 0; _fit = true; FitImage(animate: true); UpdateControls();
         AnimateRotation(fromAngle);
     }
-    private void Fit_Click(object sender, RoutedEventArgs e) { EndImageDrag(); _fit = true; FitImage(animate: true); }
+    private void Fit_Click(object sender, RoutedEventArgs e) { if (_modelLoaded is not null) { ModelView.ResetView(); return; } EndImageDrag(); _fit = true; FitImage(animate: true); }
     private void ZoomBy(double factor)
     {
+        if (_modelLoaded is not null) { ModelView.Zoom(factor); return; }
         if (_loaded is null) return;
         // Repeated wheel ticks build on the destination, while starting from the visible scale.
         double previousTarget = _motionKind == 2 ? _motionToZoom : _zoom;
@@ -478,7 +494,7 @@ public partial class MainWindow : Window
             case Key.D0: case Key.NumPad0: Fit_Click(this, e); break;
             case Key.OemPlus: case Key.Add: ZoomBy(1.25); break;
             case Key.OemMinus: case Key.Subtract: ZoomBy(1 / 1.25); break;
-            case Key.Escape: if (_fullScreen) Full_Click(this, e); else { ShowInformation(false); _fit = true; FitImage(animate: true); } break;
+            case Key.Escape: if (_fullScreen) Full_Click(this, e); else { ShowInformation(false); Fit_Click(this, e); } break;
             default: return;
         }
         e.Handled = true;
@@ -496,6 +512,7 @@ public partial class MainWindow : Window
         ResetFilmstripThumbnails(closing: true);
         _loadCts.Cancel(); _backgroundCts.Cancel(); _folderCts.Cancel();
         EndImageDrag(); StopPhotoArrival();
+        ClearModel();
         try { Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!); File.WriteAllText(SettingsFile, JsonSerializer.Serialize(_settings)); } catch { }
     }
     private void ShowError(string message, Window? owner = null) => MessageBox.Show(owner ?? this, message, "PhotoWoo", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -509,6 +526,7 @@ public sealed class ThumbnailItem(string path) : INotifyPropertyChanged
     private int _rotation;
     public string Path { get; } = path;
     public string Name => System.IO.Path.GetFileName(Path);
+    public string FormatLabel => System.IO.Path.GetExtension(Path).TrimStart('.').ToUpperInvariant();
     public BitmapSource? Thumb { get => _thumb; set { _thumb = value; PropertyChanged?.Invoke(this, new(nameof(Thumb))); } }
     public int Rotation { get => _rotation; set { _rotation = value; PropertyChanged?.Invoke(this, new(nameof(Rotation))); } }
     public event PropertyChangedEventHandler? PropertyChanged;

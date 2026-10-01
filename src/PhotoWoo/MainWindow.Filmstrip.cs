@@ -111,6 +111,7 @@ public partial class MainWindow
                 if (_loading || _busy) { RequestFilmstripThumbnails(); return; }
                 if (index >= _thumbnails.Count) return;
                 var item = _thumbnails[index];
+                if (PhotoWoo.Imaging.SupportedFiles.IsModel(item.Path)) continue;
                 if (item.Thumb is not null) continue;
                 try
                 {

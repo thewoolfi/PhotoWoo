@@ -20,6 +20,7 @@ public sealed class SettingsWindow : Window
     private readonly string _originalLanguage;
     private string _selectedTab;
     private TextBlock _status = new();
+    private TextBlock? _associationStatus;
     private bool _accepted;
     private static readonly Brush Back = new SolidColorBrush(Color.FromRgb(29, 32, 34));
     private static readonly Brush Fore = new SolidColorBrush(Color.FromRgb(229, 233, 232));
@@ -32,6 +33,7 @@ public sealed class SettingsWindow : Window
 
     public SettingsWindow(ViewerSettings settings, string initialTab = "viewing")
     {
+        ModelTranslations.Register();
         _draft = settings.Copy(); ResultSettings = settings.Copy();
         _originalLanguage = settings.Language;
         _selectedTab = initialTab;
@@ -42,6 +44,7 @@ public sealed class SettingsWindow : Window
         UseLayoutRounding = true; SnapsToDevicePixels = true;
         SourceInitialized += (_, _) => { int dark = 1; DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref dark, sizeof(int)); };
         Closed += (_, _) => { if (!_accepted) L10n.SetLanguage(_originalLanguage); };
+        Activated += (_, _) => RefreshAssociations();
         Resources.Add(typeof(ComboBox), ChoiceStyle());
         Resources.Add(typeof(CheckBox), ToggleStyle());
         Resources.Add(typeof(TabControl), TabControlStyle());
@@ -167,6 +170,8 @@ public sealed class SettingsWindow : Window
         mouse.Children.Add(Section("help.mouse", 0));
         foreach (var entry in new (string Glyph, string Key)[] { ("↕", "wheel"), ("×2", "doubleClick"), ("↔", "drag"), ("▤", "stripDrag"), ("↓", "drop") })
             mouse.Children.Add(HelpRow(entry.Glyph, L10n.Text("help." + entry.Key), compactKey: true));
+        mouse.Children.Add(Section("models.formats", 18));
+        mouse.Children.Add(Paragraph(L10n.Text("models.controls"), 0));
         Grid.SetColumn(mouse, 2); page.Children.Add(mouse);
         return page;
     }
@@ -188,19 +193,29 @@ public sealed class SettingsWindow : Window
         var defaults = MakeButton(L10n.Text("settings.windows.chooseDefault"), true);
         defaults.Margin = new Thickness(0, 20, 0, 0); defaults.HorizontalAlignment = HorizontalAlignment.Left;
         var note = Paragraph(L10n.Text("settings.windows.note"), 12);
+        var assigned = _associationStatus = Paragraph("", 8);
+        RefreshAssociations();
         defaults.Click += (_, _) =>
         {
             try
             {
                 var executable = Environment.ProcessPath ?? throw new InvalidOperationException(L10n.Text("settings.windows.exeError"));
-                FileAssociations.Register(executable, Path.Combine(AppContext.BaseDirectory, "Assets", "PhotoWoo.ImageFile.ico"), ImageService.SupportedExtensions);
+                FileAssociations.Register(executable, Path.Combine(AppContext.BaseDirectory, "Assets", "PhotoWoo.ImageFile.ico"), SupportedFiles.Extensions);
                 FileAssociations.OpenDefaultAppsSettings();
-                note.Text = L10n.Text("settings.windows.done");
+                note.Text = L10n.Format("models.registered", SupportedFiles.Extensions.Count);
+                RefreshAssociations();
             }
             catch (Exception ex) { note.Text = L10n.Format("settings.windows.error", ex.Message); }
         };
-        page.Children.Add(defaults); page.Children.Add(note);
+        page.Children.Add(defaults); page.Children.Add(note); page.Children.Add(assigned);
         return page;
+    }
+
+    private void RefreshAssociations()
+    {
+        if (_associationStatus is not null)
+            _associationStatus.Text = L10n.Format("models.assigned",
+                FileAssociations.CountAssigned(SupportedFiles.Extensions), SupportedFiles.Extensions.Count);
     }
 
     private FrameworkElement UpdatesPage()

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:interactions="clr-namespace:PhotoWoo.Interactions"
+        xmlns:models="clr-namespace:PhotoWoo.Models"
         Title="PhotoWoo" Width="1200" Height="800" MinWidth="800" MinHeight="560"
         WindowStartupLocation="CenterScreen" Background="#17191B" Foreground="#E7E9E9"
         FontFamily="Segoe UI Variable, Segoe UI" FontSize="13"
@@ -235,6 +236,9 @@
                     </Canvas>
                 </Border>
 
+                <models:ModelViewport x:Name="ModelView" Visibility="Collapsed"
+                                      ToolTip="{DynamicResource L10n.models.controls}" />
+
                 <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
                             IsHitTestVisible="False" Margin="24">
                     <Image Source="Assets/PhotoWoo-logo.png" Width="76" Height="76" HorizontalAlignment="Center" Margin="0,0,0,25" RenderOptions.BitmapScalingMode="HighQuality" />
@@ -275,6 +279,7 @@
                                 ToolTip="{DynamicResource L10n.main.zoomIn}" AutomationProperties.Name="{DynamicResource L10n.main.zoomIn}" />
                         <Button Style="{StaticResource IconButton}" Tag="M8,3 L3,3 3,8 M16,3 L21,3 21,8 M3,16 L3,21 8,21 M21,16 L21,21 16,21 M7,7 L17,7 17,17 7,17 Z" Click="Fit_Click"
                                 ToolTip="{DynamicResource L10n.main.fit}" AutomationProperties.Name="{DynamicResource L10n.main.fit}" />
+                        <StackPanel x:Name="ImageEditTools" Orientation="Horizontal">
                         <Border Style="{StaticResource ToolbarSeparator}" />
                         <Button Style="{StaticResource IconButton}" Tag="M4,10 A8,8 0 1 1 5,18 M4,4 L4,10 10,10" Click="RotateLeft_Click"
                                 ToolTip="{DynamicResource L10n.main.rotateLeft}" AutomationProperties.Name="{DynamicResource L10n.main.rotateLeft}" />
@@ -290,6 +295,7 @@
                         <Border Style="{StaticResource ToolbarSeparator}" />
                         <Button x:Name="PrintButton" Style="{StaticResource IconButton}" Tag="M6,8 L6,3 18,3 18,8 M6,17 L3,17 3,9 21,9 21,17 18,17 M6,14 L18,14 18,21 6,21 Z M17,11 L18,11" Click="Print_Click"
                                 ToolTip="{DynamicResource L10n.main.print}" AutomationProperties.Name="{DynamicResource L10n.main.print}" />
+                        </StackPanel>
                         <Button x:Name="FullscreenButton" Style="{StaticResource IconButton}" Tag="M8,3 L3,3 3,8 M16,3 L21,3 21,8 M3,16 L3,21 8,21 M21,16 L21,21 16,21" Click="Full_Click"
                                 ToolTip="{DynamicResource L10n.main.fullscreen}" AutomationProperties.Name="{DynamicResource L10n.main.fullscreen}" />
                     </StackPanel>
@@ -306,7 +312,7 @@
                         <TextBlock x:Name="InfoDetailsText" Foreground="#AEB7B9" FontSize="12"
                                    TextWrapping="Wrap" LineHeight="22" />
                         <Border Background="{StaticResource LineBrush}" Height="1" Margin="0,24,0,20" />
-                        <TextBlock Text="{DynamicResource L10n.main.rawHint}"
+                        <TextBlock x:Name="InfoHintText" Text="{DynamicResource L10n.main.rawHint}"
                                    Foreground="#859092" FontSize="12" TextWrapping="Wrap" LineHeight="18" />
                         <Button x:Name="FullQualityButton" Style="{StaticResource QuietButton}" Content="{DynamicResource L10n.main.fullQuality}"
                                 Click="FullQuality_Click" Margin="0,16,0,0" HorizontalAlignment="Left"
@@ -333,9 +339,13 @@
                     <DataTemplate>
                         <StackPanel>
                             <Border Height="53" Background="#17191B" Margin="0,0,0,6">
+                                <Grid>
+                                <TextBlock Text="{Binding FormatLabel}" Foreground="#A9C8BD" FontSize="12"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 <Image Source="{Binding Thumb}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
                                     <Image.LayoutTransform><RotateTransform Angle="{Binding Rotation}" /></Image.LayoutTransform>
                                 </Image>
+                                </Grid>
                             </Border>
                             <TextBlock Text="{Binding Name}" FontSize="10" TextTrimming="CharacterEllipsis"
                                        TextAlignment="Center" ToolTip="{Binding Name}" />

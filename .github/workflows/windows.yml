@@ -113,12 +113,18 @@ jobs:
           $notes = @'
           PhotoWoo for Windows x64. Extract the ZIP and run PhotoWoo.exe.
 
-          - View common image formats, RAW previews and ICO files.
+          - Expanded format registration: 145 extensions, including SVG/SVGZ, JPEG XR, QOI, CUR/ANI and PNG-based ICNS.
+          - Open merged Krita/OpenRaster previews and additional legacy and scientific image formats.
+          - View GLB/glTF 2.0 models with textures, orbit, pan, zoom and drag inertia.
           - Rotate and save images, with print preview.
           - Immersive fullscreen, smooth filmstrip navigation and settings in ten languages.
-          - New Updates settings: check manually or automatically at startup and every 30 minutes.
+          - Register all supported formats from Settings and see how many currently use PhotoWoo.
+          - Check for updates manually or automatically at startup and every 30 minutes.
           - Download verified updates from GitHub Releases, then confirm installation and restart.
 
+          3D viewing is basic: default pose and diffuse materials, without animation playback, full PBR, vertex colors, Draco/meshopt or KTX2-only textures.
+
+          To add the new file types, use Settings > Windows > Choose as default app, then confirm the defaults in Windows.
           If you are using PhotoWoo 0.4 or earlier, download this release manually once to enable future in-app updates.
           '@
           $notesPath = Join-Path $env:RUNNER_TEMP 'release-notes.md'

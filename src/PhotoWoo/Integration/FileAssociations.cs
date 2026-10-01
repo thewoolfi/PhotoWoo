@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32;
 
 namespace PhotoWoo.Integration;
@@ -49,6 +50,24 @@ public static class FileAssociations
         }
     }
 
+    public static int CountAssigned(IEnumerable<string> extensions)
+    {
+        var count = 0;
+        foreach (var extension in extensions.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var result = new StringBuilder(512);
+            uint length = (uint)result.Capacity;
+            if (AssocQueryString(0, 20, extension, null, result, ref length) == 0 &&
+                (result.ToString().Equals(ProgId(extension), StringComparison.OrdinalIgnoreCase) ||
+                 result.ToString().Equals(@"Applications\PhotoWoo.exe", StringComparison.OrdinalIgnoreCase)))
+                count++;
+        }
+        return count;
+    }
+
+    private static string ProgId(string extension) =>
+        $"PhotoWoo.{(extension is ".glb" or ".gltf" ? "Model" : "Image")}.{extension[1..]}.1";
+
     // This pure plan is also used by the checks, so verifying the registration never writes the registry.
     internal static IReadOnlyList<RegistrationEntry> CreateRegistrationPlan(
         string executablePath, string iconPath, IEnumerable<string> extensions)
@@ -72,16 +91,16 @@ public static class FileAssociations
             new(ApplicationPath + @"\shell\open", "MultiSelectModel", "Single"),
             new(ApplicationPath + @"\shell\open\command", "", openCommand),
             new(CapabilitiesPath, "ApplicationName", ApplicationName),
-            new(CapabilitiesPath, "ApplicationDescription", "Быстрый просмотр изображений и RAW, поворот и печать."),
+            new(CapabilitiesPath, "ApplicationDescription", "Просмотр изображений, RAW и 3D-моделей GLB/glTF, поворот и печать."),
             new(CapabilitiesPath, "ApplicationIcon", applicationIcon)
         };
 
         foreach (var extension in normalizedExtensions)
         {
             // Keep this association version stable across ordinary application releases.
-            var progId = $"PhotoWoo.Image.{extension[1..]}.1";
+            var progId = ProgId(extension);
             var progIdPath = ClassesPath + @"\" + progId;
-            var typeName = $"Изображение {extension[1..].ToUpperInvariant()} (PhotoWoo)";
+            var typeName = $"{(extension is ".glb" or ".gltf" ? "3D-модель" : "Изображение")} {extension[1..].ToUpperInvariant()} (PhotoWoo)";
             entries.AddRange([
                 new(progIdPath, "", typeName),
                 new(progIdPath, "FriendlyTypeName", typeName),
@@ -128,4 +147,8 @@ public static class FileAssociations
 
     [DllImport("shell32.dll")]
     private static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    private static extern int AssocQueryString(uint flags, uint kind, string association, string? extra,
+        StringBuilder output, ref uint length);
 }
