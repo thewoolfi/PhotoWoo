@@ -2,6 +2,8 @@
 
 A Windows image viewer with a quiet dark interface, RAW previews, printing and an immersive fullscreen mode.
 
+![PhotoWoo displaying an image in its dark viewer](docs/screenshots/main.png)
+
 ## Download
 
 Get the Windows x64 ZIP from [Releases](https://github.com/thewoolfi/PhotoWoo/releases). Extract the entire folder and run **PhotoWoo.exe**. The portable build includes .NET; keep its accompanying files beside the executable.
