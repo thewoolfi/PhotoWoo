@@ -2,13 +2,14 @@ namespace PhotoWoo;
 
 public sealed class ViewerSettings
 {
+    public const string DefaultSupportUrl = "https://boosty.to/andrewwoolfi";
     public bool Filmstrip { get; set; }
     public string Language { get; set; } = "auto";
     public bool Animations { get; set; } = true;
     public bool Inertia { get; set; } = true;
     public bool FullscreenFill { get; set; }
     public double FullscreenHideDelaySeconds { get; set; } = 2;
-    public string SupportUrl { get; set; } = "";
+    public string SupportUrl { get; set; } = DefaultSupportUrl;
 
     public ViewerSettings Copy() => (ViewerSettings)MemberwiseClone();
 

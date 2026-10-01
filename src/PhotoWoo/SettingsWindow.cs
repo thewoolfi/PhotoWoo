@@ -20,7 +20,6 @@ public sealed class SettingsWindow : Window
     private readonly string _originalLanguage;
     private string _selectedTab;
     private TextBlock _status = new();
-    private TextBox? _supportUrl;
     private bool _accepted;
     private static readonly Brush Back = new SolidColorBrush(Color.FromRgb(29, 32, 34));
     private static readonly Brush Fore = new SolidColorBrush(Color.FromRgb(229, 233, 232));
@@ -82,13 +81,7 @@ public sealed class SettingsWindow : Window
         var save = MakeButton(L10n.Text("settings.save"), true); save.IsDefault = true; save.Margin = new Thickness(10, 0, 0, 0);
         save.Click += (_, _) =>
         {
-            if (!ViewerSettings.TryNormalizeSupportUrl(_draft.SupportUrl, out var normalized))
-            {
-                _status.Text = L10n.Text("settings.support.invalid");
-                tabs.SelectedItem = tabs.Items.Cast<TabItem>().First(item => Equals(item.Tag, "about"));
-                _supportUrl?.Focus(); return;
-            }
-            _draft.SupportUrl = normalized;
+            _draft.SupportUrl = ViewerSettings.DefaultSupportUrl;
             _draft.FullscreenHideDelaySeconds = Math.Clamp(_draft.FullscreenHideDelaySeconds, 1, 10);
             ResultSettings = _draft.Copy(); _accepted = true; DialogResult = true;
         };
@@ -218,25 +211,14 @@ public sealed class SettingsWindow : Window
         page.Children.Add(Paragraph(L10n.Text("settings.about.description"), 10));
         page.Children.Add(Section("settings.support.title", 30));
         page.Children.Add(Paragraph(L10n.Text("settings.support.hint"), 0));
-        _supportUrl = new TextBox
-        {
-            Text = _draft.SupportUrl, Height = 36, Padding = new Thickness(10, 7, 10, 5),
-            Background = new SolidColorBrush(Color.FromRgb(37, 42, 45)), Foreground = Fore,
-            BorderBrush = new SolidColorBrush(Color.FromRgb(65, 73, 75)), BorderThickness = new Thickness(1),
-            Margin = new Thickness(0, 15, 0, 0), VerticalContentAlignment = VerticalAlignment.Center
-        };
-        System.Windows.Automation.AutomationProperties.SetName(_supportUrl, L10n.Text("settings.support.title"));
-        var open = MakeButton(L10n.Text("settings.support.open"));
-        open.HorizontalAlignment = HorizontalAlignment.Left; open.Margin = new Thickness(0, 12, 0, 0);
-        open.IsEnabled = ViewerSettings.IsValidSupportUrl(_draft.SupportUrl);
-        _supportUrl.TextChanged += (_, _) => { _draft.SupportUrl = _supportUrl.Text; open.IsEnabled = ViewerSettings.IsValidSupportUrl(_draft.SupportUrl); };
+        var open = MakeButton(L10n.Text("settings.support.open"), true);
+        open.HorizontalAlignment = HorizontalAlignment.Left; open.Margin = new Thickness(0, 18, 0, 0);
         open.Click += (_, _) =>
         {
-            if (!ViewerSettings.IsValidSupportUrl(_draft.SupportUrl)) return;
-            try { Process.Start(new ProcessStartInfo(_draft.SupportUrl.Trim()) { UseShellExecute = true }); }
+            try { Process.Start(new ProcessStartInfo(ViewerSettings.DefaultSupportUrl) { UseShellExecute = true }); }
             catch (Exception ex) { _status.Text = L10n.Format("settings.support.openError", ex.Message); }
         };
-        page.Children.Add(_supportUrl); page.Children.Add(open);
+        page.Children.Add(open);
         return page;
     }
 

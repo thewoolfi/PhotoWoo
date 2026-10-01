@@ -36,12 +36,7 @@ public partial class MainWindow
 
     private void Support_Click(object sender, RoutedEventArgs e)
     {
-        if (!ViewerSettings.IsValidSupportUrl(_settings.SupportUrl))
-        {
-            ShowSettings("about");
-            return;
-        }
-        try { Process.Start(new ProcessStartInfo(_settings.SupportUrl) { UseShellExecute = true }); }
+        try { Process.Start(new ProcessStartInfo(ViewerSettings.DefaultSupportUrl) { UseShellExecute = true }); }
         catch (Exception ex) { ShowError(L10n.Format("main.linkFailed", ex.Message)); }
     }
 }

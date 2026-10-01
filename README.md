@@ -53,4 +53,4 @@ The application uses WPF and Magick.NET 14.16.0. Dependency notices are included
 
 This is an early release. JPEG rotation is re-encoded at quality 95; lossless JPEG rotation is not implemented. Animated and multipage files show the first frame, except ICO, which selects the largest suitable icon. Detected multiframe originals cannot be overwritten. Full RAW rendering can differ from the camera’s embedded preview. Physical printing, every RAW camera model, HDR and all colour-profile combinations have not been verified.
 
-Settings are stored in `%LOCALAPPDATA%/PhotoWoo/settings.json`. An optional creator-support link opens in the default browser; PhotoWoo does not collect payments.
+Settings are stored in `%LOCALAPPDATA%/PhotoWoo/settings.json`. The support button opens the creator’s [Boosty page](https://boosty.to/andrewwoolfi) in the default browser; PhotoWoo does not collect payments.
